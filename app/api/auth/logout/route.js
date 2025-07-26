@@ -14,6 +14,7 @@ export async function POST(request) {
         // Continue even if database is not available
       }
     }
+    
 
     return NextResponse.json({
       success: true,
