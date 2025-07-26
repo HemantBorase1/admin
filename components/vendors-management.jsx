@@ -31,29 +31,53 @@ import { useToast } from "@/hooks/use-toast"
 
 // API functions
 async function fetchVendors() {
-  const res = await fetch('/api/vendors');
-  if (!res.ok) throw new Error('Failed to fetch vendors');
-  return await res.json();
+  try {
+    const res = await fetch('/api/vendors');
+    if (!res.ok) {
+      console.error('Failed to fetch vendors:', res.status);
+      return [];
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching vendors:', error);
+    return [];
+  }
 }
 
 async function updateVendor(vendor) {
-  const res = await fetch('/api/vendors', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(vendor),
-  });
-  if (!res.ok) throw new Error('Failed to update vendor');
-  return await res.json();
+  try {
+    const res = await fetch('/api/vendors', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(vendor),
+    });
+    if (!res.ok) {
+      console.error('Failed to update vendor:', res.status);
+      throw new Error('Failed to update vendor');
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error updating vendor:', error);
+    throw error;
+  }
 }
 
 async function deleteVendor(id) {
-  const res = await fetch('/api/vendors', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id }),
-  });
-  if (!res.ok) throw new Error('Failed to delete vendor');
-  return await res.json();
+  try {
+    const res = await fetch('/api/vendors', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    if (!res.ok) {
+      console.error('Failed to delete vendor:', res.status);
+      throw new Error('Failed to delete vendor');
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error deleting vendor:', error);
+    throw error;
+  }
 }
 
 export function VendorsManagement() {
@@ -73,25 +97,37 @@ export function VendorsManagement() {
   const { toast } = useToast()
 
   useEffect(() => {
-    fetchVendors().then(setVendors)
+    fetchVendors().then(setVendors).catch(error => {
+      console.error('Error setting vendors:', error);
+      setVendors([]);
+    })
   }, [])
 
   const filteredVendors = vendors.filter(
     (vendor) =>
       vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vendor.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vendor.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
       vendor.category.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const handleDeleteVendor = (vendorId) => {
-    deleteVendor(vendorId).then(() => {
-    setVendors(vendors.filter((vendor) => vendor.id !== vendorId))
-    toast({
-      title: "Vendor Deleted",
-      description: "Vendor has been removed from the system.",
-      variant: "destructive",
-    })
-    })
+    deleteVendor(vendorId)
+      .then(() => {
+        setVendors(vendors.filter((vendor) => vendor.id !== vendorId))
+        toast({
+          title: "Vendor Deleted",
+          description: "Vendor has been removed from the system.",
+          variant: "destructive",
+        })
+      })
+      .catch((error) => {
+        console.error('Error deleting vendor:', error);
+        toast({
+          title: "Error Deleting Vendor",
+          description: "Failed to delete the vendor. Please try again.",
+          variant: "destructive",
+        })
+      })
   }
 
   const handleEditClick = (vendor) => {

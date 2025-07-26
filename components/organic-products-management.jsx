@@ -32,36 +32,68 @@ import { useToast } from "@/hooks/use-toast"
 
 // API functions
 async function fetchProducts() {
-  const res = await fetch('/api/organic-products');
-  if (!res.ok) throw new Error('Failed to fetch products');
-  return await res.json();
+  try {
+    const res = await fetch('/api/organic-products');
+    if (!res.ok) {
+      console.error('Failed to fetch products:', res.status);
+      return [];
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    return [];
+  }
 }
 
 async function deleteProduct(id) {
-  const res = await fetch('/api/organic-products', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id }),
-  });
-  if (!res.ok) throw new Error('Failed to delete product');
-  return await res.json();
+  try {
+    const res = await fetch('/api/organic-products', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    if (!res.ok) {
+      console.error('Failed to delete product:', res.status);
+      throw new Error('Failed to delete product');
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    throw error;
+  }
 }
 
 async function fetchFarmers() {
-  const res = await fetch('/api/farmers');
-  if (!res.ok) throw new Error('Failed to fetch farmers');
-  return await res.json();
+  try {
+    const res = await fetch('/api/farmers');
+    if (!res.ok) {
+      console.error('Failed to fetch farmers:', res.status);
+      return [];
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching farmers:', error);
+    return [];
+  }
 }
 
 // Add API function for update
 async function updateProduct(product) {
-  const res = await fetch('/api/organic-products', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(product),
-  });
-  if (!res.ok) throw new Error('Failed to update product');
-  return await res.json();
+  try {
+    const res = await fetch('/api/organic-products', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(product),
+    });
+    if (!res.ok) {
+      console.error('Failed to update product:', res.status);
+      throw new Error('Failed to update product');
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error updating product:', error);
+    throw error;
+  }
 }
 
 export function OrganicProductsManagement() {
@@ -87,8 +119,14 @@ export function OrganicProductsManagement() {
   const { toast } = useToast()
 
   useEffect(() => {
-    fetchProducts().then(setProducts);
-    fetchFarmers().then(setFarmers);
+    fetchProducts().then(setProducts).catch(error => {
+      console.error('Error setting products:', error);
+      setProducts([]);
+    });
+    fetchFarmers().then(setFarmers).catch(error => {
+      console.error('Error setting farmers:', error);
+      setFarmers([]);
+    });
   }, []);
 
   // Update tab values to match category values
@@ -118,14 +156,23 @@ export function OrganicProductsManagement() {
   const dairyCount = filteredProducts.filter((p) => p.category === "Dairy & Others").length;
 
   const handleDeleteProduct = (productId) => {
-    deleteProduct(productId).then(() => {
-    setProducts(products.filter((product) => product.id !== productId))
-    toast({
-      title: "Product Deleted",
-      description: "Organic product has been removed from the catalog.",
-      variant: "destructive",
+    deleteProduct(productId)
+      .then(() => {
+        setProducts(products.filter((product) => product.id !== productId))
+        toast({
+          title: "Product Deleted",
+          description: "Organic product has been removed from the catalog.",
+          variant: "destructive",
+        })
       })
-    })
+      .catch((error) => {
+        console.error('Error deleting product:', error);
+        toast({
+          title: "Error Deleting Product",
+          description: "Failed to delete the organic product. Please try again.",
+          variant: "destructive",
+        })
+      })
   }
 
   const handleEditClick = (product) => {
@@ -327,19 +374,19 @@ export function OrganicProductsManagement() {
                           const farmer = getFarmerById(product.farmer_id);
                           return (
                             <>
-                              <Avatar className="h-8 w-8">
+                        <Avatar className="h-8 w-8">
                                 <AvatarImage src={farmer?.avatar || "/placeholder.svg"} />
-                                <AvatarFallback>
+                          <AvatarFallback>
                                   {(farmer?.name || "F").split(" ").map((n) => n[0]).join("")}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
                                 <div className="font-medium text-sm">{farmer?.name || "Unknown"}</div>
-                                <div className="text-xs text-muted-foreground flex items-center">
-                                  <MapPin className="h-3 w-3 mr-1" />
+                          <div className="text-xs text-muted-foreground flex items-center">
+                            <MapPin className="h-3 w-3 mr-1" />
                                   {farmer?.location || "Unknown"}
-                                </div>
-                              </div>
+                          </div>
+                        </div>
                             </>
                           );
                         })()}
@@ -445,26 +492,26 @@ export function OrganicProductsManagement() {
                                       const farmer = getFarmerById(selectedProduct.farmer_id);
                                       return (
                                         <>
-                                          <Avatar className="h-16 w-16">
+                                    <Avatar className="h-16 w-16">
                                             <AvatarImage src={farmer?.avatar || "/placeholder.svg"} />
-                                            <AvatarFallback className="text-lg">
+                                      <AvatarFallback className="text-lg">
                                               {(farmer?.name || "F").split(" ").map((n) => n[0]).join("")}
-                                            </AvatarFallback>
-                                          </Avatar>
-                                          <div className="flex-1 grid md:grid-cols-2 gap-4">
-                                            <div>
-                                              <label className="text-sm font-medium">Name</label>
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 grid md:grid-cols-2 gap-4">
+                                      <div>
+                                        <label className="text-sm font-medium">Name</label>
                                               <p className="text-sm text-muted-foreground">{farmer?.name || "Unknown"}</p>
-                                            </div>
-                                            <div>
-                                              <label className="text-sm font-medium">Location</label>
-                                              <div className="flex items-center text-sm text-muted-foreground">
-                                                <MapPin className="h-3 w-3 mr-1" />
+                                      </div>
+                                      <div>
+                                        <label className="text-sm font-medium">Location</label>
+                                        <div className="flex items-center text-sm text-muted-foreground">
+                                          <MapPin className="h-3 w-3 mr-1" />
                                                 {farmer?.location || "Unknown"}
-                                              </div>
-                                            </div>
+                                        </div>
+                                      </div>
                                             {/* Add more fields as needed */}
-                                          </div>
+                                    </div>
                                         </>
                                       );
                                     })()}

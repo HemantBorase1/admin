@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Eye, EyeOff, Leaf } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
 
-export function LoginForm({ onLogin }) {
+export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [credentials, setCredentials] = useState({
     email: "",
@@ -16,28 +17,60 @@ export function LoginForm({ onLogin }) {
   })
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+  const router = useRouter()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsLoading(true)
 
-    // Simulate login process
-    setTimeout(() => {
-      if (credentials.email === "admin@agripanel.com" && credentials.password === "admin123") {
+    try {
+      console.log('Attempting login with:', { email: credentials.email })
+      
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      })
+
+      const data = await response.json()
+      console.log('Login response:', { status: response.status, data })
+
+      if (response.ok && data.success) {
+        // Store session token in cookie
+        document.cookie = `admin_session=${data.sessionToken}; path=/; max-age=${24 * 60 * 60}; secure; samesite=strict`
+        
+        // Store user info in localStorage
+        localStorage.setItem('admin_user', JSON.stringify(data.user))
+        
+        console.log('Login successful, redirecting to dashboard...')
+        
         toast({
           title: "Login Successful",
           description: "Welcome to AgriAdmin Dashboard!",
         })
-        onLogin()
+        
+        // Redirect to dashboard
+        router.push('/dashboard')
       } else {
+        console.error('Login failed:', data.error)
         toast({
           title: "Login Failed",
-          description: "Invalid email or password. Please try again.",
+          description: data.error || "Invalid credentials. Please try again.",
           variant: "destructive",
         })
       }
+    } catch (error) {
+      console.error('Login error:', error)
+      toast({
+        title: "Login Error",
+        description: "An error occurred during login. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
       setIsLoading(false)
-    }, 1000)
+    }
   }
 
   return (
@@ -120,7 +153,8 @@ export function LoginForm({ onLogin }) {
             <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
               <p className="text-xs text-gray-600 font-medium mb-2">Demo Credentials:</p>
               <p className="text-xs text-gray-500">Email: admin@agripanel.com</p>
-              <p className="text-xs text-gray-500">Password: admin123</p>
+              <p className="text-xs text-gray-500">Password: Admin@123</p>
+              <p className="text-xs text-gray-500 mt-1">SuperAdmin: superadmin@agripanel.com / SuperAdmin@123</p>
             </div>
           </CardContent>
         </Card>

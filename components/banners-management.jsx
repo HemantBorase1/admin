@@ -32,39 +32,71 @@ import { useToast } from "@/hooks/use-toast"
 
 // API functions
 async function fetchBanners() {
-  const res = await fetch('/api/banners');
-  if (!res.ok) throw new Error('Failed to fetch banners');
-  return await res.json();
+  try {
+    const res = await fetch('/api/banners');
+    if (!res.ok) {
+      console.error('Failed to fetch banners:', res.status);
+      return [];
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching banners:', error);
+    return [];
+  }
 }
 
 async function addBanner(banner) {
-  const res = await fetch('/api/banners', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(banner),
-  });
-  if (!res.ok) throw new Error('Failed to add banner');
-  return await res.json();
+  try {
+    const res = await fetch('/api/banners', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(banner),
+    });
+    if (!res.ok) {
+      console.error('Failed to add banner:', res.status);
+      throw new Error('Failed to add banner');
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error adding banner:', error);
+    throw error;
+  }
 }
 
 async function updateBanner(banner) {
-  const res = await fetch('/api/banners', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(banner),
-  });
-  if (!res.ok) throw new Error('Failed to update banner');
-  return await res.json();
+  try {
+    const res = await fetch('/api/banners', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(banner),
+    });
+    if (!res.ok) {
+      console.error('Failed to update banner:', res.status);
+      throw new Error('Failed to update banner');
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error updating banner:', error);
+    throw error;
+  }
 }
 
 async function deleteBanner(id) {
-  const res = await fetch('/api/banners', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id }),
-  });
-  if (!res.ok) throw new Error('Failed to delete banner');
-  return await res.json();
+  try {
+    const res = await fetch('/api/banners', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    if (!res.ok) {
+      console.error('Failed to delete banner:', res.status);
+      throw new Error('Failed to delete banner');
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error deleting banner:', error);
+    throw error;
+  }
 }
 
 export function BannersManagement() {
@@ -80,48 +112,77 @@ export function BannersManagement() {
   const { toast } = useToast()
 
   useEffect(() => {
-    fetchBanners().then(setBanners)
+    fetchBanners().then(setBanners).catch(error => {
+      console.error('Error setting banners:', error);
+      setBanners([]);
+    })
   }, [])
 
   const handleAddBanner = () => {
     const banner = {
       ...newBanner,
-      createdDate: new Date().toISOString().split("T")[0],
-      clickCount: 0,
+      published_at: new Date().toISOString().split("T")[0],
     }
-    addBanner(banner).then((created) => {
-      setBanners([...banners, created])
-    setNewBanner({ title: "", description: "", imageUrl: "", isActive: true })
-    setIsAddDialogOpen(false)
-    toast({
-      title: "Banner Added",
-      description: "New banner has been successfully created.",
+    addBanner(banner)
+      .then((created) => {
+        setBanners([...banners, created])
+        setNewBanner({ title: "", description: "", imageUrl: "", isActive: true })
+        setIsAddDialogOpen(false)
+        toast({
+          title: "Banner Added",
+          description: "New banner has been successfully created.",
+        })
       })
-    })
+      .catch((error) => {
+        console.error('Error adding banner:', error);
+        toast({
+          title: "Error Adding Banner",
+          description: "Failed to add the banner. Please try again.",
+          variant: "destructive",
+        })
+      })
   }
 
   const handleEditBanner = () => {
     if (editingBanner) {
-      updateBanner(editingBanner).then((updated) => {
-        setBanners(banners.map((banner) => (banner.id === updated.id ? updated : banner)))
-      setEditingBanner(null)
-      toast({
-        title: "Banner Updated",
-        description: "Banner has been successfully updated.",
+      updateBanner(editingBanner)
+        .then((updated) => {
+          setBanners(banners.map((banner) => (banner.id === updated.id ? updated : banner)))
+          setEditingBanner(null)
+          toast({
+            title: "Banner Updated",
+            description: "Banner has been successfully updated.",
+          })
         })
-      })
+        .catch((error) => {
+          console.error('Error updating banner:', error);
+          toast({
+            title: "Error Updating Banner",
+            description: "Failed to update the banner. Please try again.",
+            variant: "destructive",
+          })
+        })
     }
   }
 
   const handleDeleteBanner = (bannerId) => {
-    deleteBanner(bannerId).then(() => {
-    setBanners(banners.filter((banner) => banner.id !== bannerId))
-    toast({
-      title: "Banner Deleted",
-      description: "Banner has been removed from the system.",
-      variant: "destructive",
+    deleteBanner(bannerId)
+      .then(() => {
+        setBanners(banners.filter((banner) => banner.id !== bannerId))
+        toast({
+          title: "Banner Deleted",
+          description: "Banner has been removed from the system.",
+          variant: "destructive",
+        })
       })
-    })
+      .catch((error) => {
+        console.error('Error deleting banner:', error);
+        toast({
+          title: "Error Deleting Banner",
+          description: "Failed to delete the banner. Please try again.",
+          variant: "destructive",
+        })
+      })
   }
 
   const handleToggleStatus = (bannerId) => {
@@ -339,4 +400,3 @@ export function BannersManagement() {
     </div>
   )
 }
-

@@ -6,24 +6,56 @@ import { Users, Store, Package, Newspaper, Activity, TrendingUp } from "lucide-r
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell } from "recharts"
 
 async function fetchFarmers() {
-  const res = await fetch('/api/farmers');
-  if (!res.ok) throw new Error('Failed to fetch farmers');
-  return await res.json();
+  try {
+    const res = await fetch('/api/farmers');
+    if (!res.ok) {
+      console.error('Failed to fetch farmers:', res.status);
+      return [];
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching farmers:', error);
+    return [];
+  }
 }
 async function fetchVendors() {
-  const res = await fetch('/api/vendors');
-  if (!res.ok) throw new Error('Failed to fetch vendors');
-  return await res.json();
+  try {
+    const res = await fetch('/api/vendors');
+    if (!res.ok) {
+      console.error('Failed to fetch vendors:', res.status);
+      return [];
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching vendors:', error);
+    return [];
+  }
 }
 async function fetchProducts() {
-  const res = await fetch('/api/organic-products');
-  if (!res.ok) throw new Error('Failed to fetch products');
-  return await res.json();
+  try {
+    const res = await fetch('/api/organic-products');
+    if (!res.ok) {
+      console.error('Failed to fetch products:', res.status);
+      return [];
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    return [];
+  }
 }
 async function fetchNews() {
-  const res = await fetch('/api/news');
-  if (!res.ok) throw new Error('Failed to fetch news');
-  return await res.json();
+  try {
+    const res = await fetch('/api/news');
+    if (!res.ok) {
+      console.error('Failed to fetch news:', res.status);
+      return [];
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching news:', error);
+    return [];
+  }
 }
 
 const statsData = [

@@ -32,39 +32,71 @@ import { useToast } from "@/hooks/use-toast"
 
 // API functions
 async function fetchNews() {
-  const res = await fetch('/api/news');
-  if (!res.ok) throw new Error('Failed to fetch news');
-  return await res.json();
+  try {
+    const res = await fetch('/api/news');
+    if (!res.ok) {
+      console.error('Failed to fetch news:', res.status);
+      return [];
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching news:', error);
+    return [];
+  }
 }
 
 async function addNews(news) {
-  const res = await fetch('/api/news', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(news),
-  });
-  if (!res.ok) throw new Error('Failed to add news');
-  return await res.json();
+  try {
+    const res = await fetch('/api/news', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(news),
+    });
+    if (!res.ok) {
+      console.error('Failed to add news:', res.status);
+      throw new Error('Failed to add news');
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error adding news:', error);
+    throw error;
+  }
 }
 
 async function updateNews(news) {
-  const res = await fetch('/api/news', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(news),
-  });
-  if (!res.ok) throw new Error('Failed to update news');
-  return await res.json();
+  try {
+    const res = await fetch('/api/news', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(news),
+    });
+    if (!res.ok) {
+      console.error('Failed to update news:', res.status);
+      throw new Error('Failed to update news');
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error updating news:', error);
+    throw error;
+  }
 }
 
 async function deleteNews(id) {
-  const res = await fetch('/api/news', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id }),
-  });
-  if (!res.ok) throw new Error('Failed to delete news');
-  return await res.json();
+  try {
+    const res = await fetch('/api/news', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    if (!res.ok) {
+      console.error('Failed to delete news:', res.status);
+      throw new Error('Failed to delete news');
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error deleting news:', error);
+    throw error;
+  }
 }
 
 export function NewsSection() {
@@ -83,7 +115,10 @@ export function NewsSection() {
 
   // Fetch news on mount
   useEffect(() => {
-    fetchNews().then(setNews)
+    fetchNews().then(setNews).catch(error => {
+      console.error('Error setting news:', error);
+      setNews([]);
+    })
   }, [])
 
   const filteredNews = news.filter(
@@ -97,44 +132,71 @@ export function NewsSection() {
       ...newNews,
       published_at: new Date().toISOString().split("T")[0],
     }
-    addNews(newsItem).then((created) => {
-      setNews([...news, created])
-      setNewNews({
-        title: "",
-        content: "",
-        category: "General",
-        status: "Draft",
+    addNews(newsItem)
+      .then((created) => {
+        setNews([...news, created])
+        setNewNews({
+          title: "",
+          content: "",
+          category: "General",
+          status: "Draft",
+        })
+        setIsAddDialogOpen(false)
+        toast({
+          title: "News Added",
+          description: "New news article has been successfully added.",
+        })
       })
-      setIsAddDialogOpen(false)
-      toast({
-        title: "News Added",
-        description: "New news article has been successfully added.",
+      .catch((error) => {
+        console.error('Error adding news:', error);
+        toast({
+          title: "Error Adding News",
+          description: "Failed to add the news article. Please try again.",
+          variant: "destructive",
+        })
       })
-    })
   }
 
   const handleEditNews = () => {
     if (editingNews) {
-      updateNews(editingNews).then((updated) => {
-        setNews(news.map((item) => (item.id === updated.id ? updated : item)))
-        setEditingNews(null)
-        toast({
-          title: "News Updated",
-          description: "News article has been successfully updated.",
+      updateNews(editingNews)
+        .then((updated) => {
+          setNews(news.map((item) => (item.id === updated.id ? updated : item)))
+          setEditingNews(null)
+          toast({
+            title: "News Updated",
+            description: "News article has been successfully updated.",
+          })
         })
-      })
+        .catch((error) => {
+          console.error('Error updating news:', error);
+          toast({
+            title: "Error Updating News",
+            description: "Failed to update the news article. Please try again.",
+            variant: "destructive",
+          })
+        })
     }
   }
 
   const handleDeleteNews = (newsId) => {
-    deleteNews(newsId).then(() => {
-      setNews(news.filter((item) => item.id !== newsId))
-      toast({
-        title: "News Deleted",
-        description: "News article has been removed.",
-        variant: "destructive",
+    deleteNews(newsId)
+      .then(() => {
+        setNews(news.filter((item) => item.id !== newsId))
+        toast({
+          title: "News Deleted",
+          description: "News article has been removed from the system.",
+          variant: "destructive",
+        })
       })
-    })
+      .catch((error) => {
+        console.error('Error deleting news:', error);
+        toast({
+          title: "Error Deleting News",
+          description: "Failed to delete the news article. Please try again.",
+          variant: "destructive",
+        })
+      })
   }
 
   const getStatusBadge = (status) => {
@@ -227,7 +289,7 @@ export function NewsSection() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Articles</CardTitle>
@@ -256,16 +318,6 @@ export function NewsSection() {
           <CardContent>
             <div className="text-2xl font-bold">{news.filter((n) => n.featured).length}</div>
             <p className="text-xs text-muted-foreground">Featured articles</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Views</CardTitle>
-            <ExternalLink className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{news.reduce((acc, n) => acc + n.views, 0)}</div>
-            <p className="text-xs text-muted-foreground">Article views</p>
           </CardContent>
         </Card>
       </div>
@@ -304,7 +356,7 @@ export function NewsSection() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center text-sm text-muted-foreground mb-4">
-                    <Calendar className="h-4 w-4" />
+                      <Calendar className="h-4 w-4" />
                     <span>{item.published_at ? new Date(item.published_at).toLocaleDateString() : '-'}</span>
                   </div>
 

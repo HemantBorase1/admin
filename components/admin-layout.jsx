@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Users, Store, ImageIcon, Beaker, Newspaper, Menu } from "lucide-react"
+import { LayoutDashboard, Users, Store, ImageIcon, Beaker, Newspaper, Menu, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -14,9 +14,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { logout, getCurrentUser } from "@/lib/auth"
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Farmers", href: "/farmers", icon: Users },
   { name: "Vendors", href: "/vendors", icon: Store },
   { name: "Banners", href: "/banners", icon: ImageIcon },
@@ -24,20 +25,18 @@ const navigation = [
   { name: "News", href: "/news", icon: Newspaper },
 ]
 
-export function AdminLayout({ children, onLogout }) {
+export function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [currentUser, setCurrentUser] = useState(null)
   const pathname = usePathname()
 
-  const handleLogout = () => {
-    if (onLogout) {
-      onLogout()
-    } else {
-      // Fallback if no onLogout prop provided
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("isAuthenticated")
-        window.location.reload()
-      }
-    }
+  useEffect(() => {
+    const user = getCurrentUser()
+    setCurrentUser(user)
+  }, [])
+
+  const handleLogout = async () => {
+    await logout()
   }
 
   return (
@@ -115,19 +114,28 @@ export function AdminLayout({ children, onLogout }) {
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Admin" />
-                      <AvatarFallback>AD</AvatarFallback>
+                      <AvatarFallback>
+                        {currentUser?.username?.charAt(0).toUpperCase() || 'A'}
+                      </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">Admin User</p>
-                      <p className="text-xs leading-none text-muted-foreground">admin@agripanel.com</p>
+                      <p className="text-sm font-medium leading-none">
+                        {currentUser?.username || 'Admin User'}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {currentUser?.role || 'admin'}
+                      </p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

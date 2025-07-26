@@ -3,10 +3,10 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { AdminLayout } from "@/components/admin-layout"
 import { Dashboard } from "@/components/dashboard"
-import { LoginForm } from "@/components/login-form"
 import { isAuthenticated, validateSession } from "@/lib/auth"
 
-export default function Home() {
+
+export default function DashboardPage() {
   const [isAuth, setIsAuth] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
@@ -14,25 +14,20 @@ export default function Home() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Check if user is authenticated
         if (isAuthenticated()) {
-          // Validate session with server
           const { valid } = await validateSession()
           if (valid) {
             setIsAuth(true)
-            // Only redirect if we're on the root path
-            if (window.location.pathname === '/') {
-              router.push('/dashboard')
-            }
           } else {
-            setIsAuth(false)
+            // Clear invalid session and redirect to login
+            router.push('/')
           }
         } else {
-          setIsAuth(false)
+          router.push('/')
         }
       } catch (error) {
         console.error('Auth check error:', error)
-        setIsAuth(false)
+        router.push('/')
       } finally {
         setIsLoading(false)
       }
@@ -53,7 +48,7 @@ export default function Home() {
   }
 
   if (!isAuth) {
-    return <LoginForm />
+    return null
   }
 
   return (
@@ -61,4 +56,4 @@ export default function Home() {
       <Dashboard />
     </AdminLayout>
   )
-}
+} 

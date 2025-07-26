@@ -83,39 +83,71 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 // ]
 
 async function fetchFarmers() {
-  const res = await fetch('/api/farmers');
-  if (!res.ok) throw new Error('Failed to fetch farmers');
-  return await res.json();
+  try {
+    const res = await fetch('/api/farmers');
+    if (!res.ok) {
+      console.error('Failed to fetch farmers:', res.status);
+      return [];
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching farmers:', error);
+    return [];
+  }
 }
 
 async function addFarmer(farmer) {
-  const res = await fetch('/api/farmers', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(farmer),
-  });
-  if (!res.ok) throw new Error('Failed to add farmer');
-  return await res.json();
+  try {
+    const res = await fetch('/api/farmers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(farmer),
+    });
+    if (!res.ok) {
+      console.error('Failed to add farmer:', res.status);
+      throw new Error('Failed to add farmer');
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error adding farmer:', error);
+    throw error;
+  }
 }
 
 async function updateFarmer(farmer) {
-  const res = await fetch('/api/farmers', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(farmer),
-  });
-  if (!res.ok) throw new Error('Failed to update farmer');
-  return await res.json();
+  try {
+    const res = await fetch('/api/farmers', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(farmer),
+    });
+    if (!res.ok) {
+      console.error('Failed to update farmer:', res.status);
+      throw new Error('Failed to update farmer');
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error updating farmer:', error);
+    throw error;
+  }
 }
 
 async function deleteFarmer(id) {
-  const res = await fetch('/api/farmers', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id }),
-  });
-  if (!res.ok) throw new Error('Failed to delete farmer');
-  return await res.json();
+  try {
+    const res = await fetch('/api/farmers', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    if (!res.ok) {
+      console.error('Failed to delete farmer:', res.status);
+      throw new Error('Failed to delete farmer');
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error deleting farmer:', error);
+    throw error;
+  }
 }
 
 export function FarmersManagement() {
@@ -135,7 +167,10 @@ export function FarmersManagement() {
   const { toast } = useToast()
 
   useEffect(() => {
-    fetchFarmers().then(setFarmers);
+    fetchFarmers().then(setFarmers).catch(error => {
+      console.error('Error setting farmers:', error);
+      setFarmers([]);
+    });
   }, []);
 
   // Helper to determine experience label
@@ -174,14 +209,23 @@ export function FarmersManagement() {
   });
 
   const handleDelete = (farmerId) => {
-    deleteFarmer(farmerId).then(() => {
-      setFarmers(farmers.filter((farmer) => farmer.id !== farmerId));
-    toast({
-      title: "Farmer Deleted",
-      description: "Farmer has been removed from the system.",
-      variant: "destructive",
-      });
-    });
+    deleteFarmer(farmerId)
+      .then(() => {
+        setFarmers(farmers.filter((farmer) => farmer.id !== farmerId));
+        toast({
+          title: "Farmer Deleted",
+          description: "Farmer has been removed from the system.",
+          variant: "destructive",
+        })
+      })
+      .catch((error) => {
+        console.error('Error deleting farmer:', error);
+        toast({
+          title: "Error Deleting Farmer",
+          description: "Failed to delete the farmer. Please try again.",
+          variant: "destructive",
+        })
+      })
   }
 
   const handleEditClick = (farmer) => {
