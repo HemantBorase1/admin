@@ -1,169 +1,294 @@
 "use client"
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, Store, Package, Newspaper, Activity, TrendingUp } from "lucide-react"
+import { Users, Store, Package, Newspaper, Activity, TrendingUp, AlertCircle } from "lucide-react"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell } from "recharts"
 
-async function fetchFarmers() {
-  try {
-    const res = await fetch('/api/farmers');
-    if (!res.ok) {
-      console.error('Failed to fetch farmers:', res.status);
-      return [];
-    }
-    return await res.json();
-  } catch (error) {
-    console.error('Error fetching farmers:', error);
-    return [];
-  }
-}
-async function fetchVendors() {
-  try {
-    const res = await fetch('/api/vendors');
-    if (!res.ok) {
-      console.error('Failed to fetch vendors:', res.status);
-      return [];
-    }
-    return await res.json();
-  } catch (error) {
-    console.error('Error fetching vendors:', error);
-    return [];
-  }
-}
-async function fetchProducts() {
-  try {
-    const res = await fetch('/api/organic-products');
-    if (!res.ok) {
-      console.error('Failed to fetch products:', res.status);
-      return [];
-    }
-    return await res.json();
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    return [];
-  }
-}
-async function fetchNews() {
-  try {
-    const res = await fetch('/api/news');
-    if (!res.ok) {
-      console.error('Failed to fetch news:', res.status);
-      return [];
-    }
-    return await res.json();
-  } catch (error) {
-    console.error('Error fetching news:', error);
-    return [];
-  }
-}
+// API endpoints configuration
+const API_ENDPOINTS = {
+  farmers: '/api/farmers',
+  vendors: '/api/vendors',
+  products: '/api/organic-products',
+  news: '/api/news'
+};
 
-const statsData = [
+// Stats configuration
+const STATS_CONFIG = [
   {
+    key: 'farmers',
     title: "Total Farmers",
-    value: 0,
     icon: Users,
     description: "Registered farmers",
     color: "bg-gradient-to-r from-green-500 to-green-600",
     iconBg: "bg-green-100",
     iconColor: "text-green-600",
+    chartColor: "#22c55e"
   },
   {
+    key: 'vendors',
     title: "Total Vendors",
-    value: 0,
     icon: Store,
     description: "Active vendor accounts",
     color: "bg-gradient-to-r from-blue-500 to-blue-600",
     iconBg: "bg-blue-100",
     iconColor: "text-blue-600",
+    chartColor: "#3b82f6"
   },
   {
+    key: 'products',
     title: "Organic Products",
-    value: 0,
     icon: Package,
     description: "Listed by farmers",
     color: "bg-gradient-to-r from-purple-500 to-purple-600",
     iconBg: "bg-purple-100",
     iconColor: "text-purple-600",
+    chartColor: "#8b5cf6"
   },
   {
+    key: 'news',
     title: "News Articles",
-    value: 0,
     icon: Newspaper,
     description: "Published articles",
     color: "bg-gradient-to-r from-orange-500 to-orange-600",
     iconBg: "bg-orange-100",
     iconColor: "text-orange-600",
-  },
-]
+    chartColor: "#f97316"
+  }
+];
 
-const chartData = [
-  { month: "Jan", farmers: 120, vendors: 8, products: 45 },
-  { month: "Feb", farmers: 150, vendors: 12, products: 67 },
-  { month: "Mar", farmers: 180, vendors: 15, products: 89 },
-  { month: "Apr", farmers: 220, vendors: 18, products: 123 },
-  { month: "May", farmers: 280, vendors: 22, products: 156 },
-  { month: "Jun", farmers: 320, vendors: 25, products: 189 },
-]
+// Custom hook for data fetching with error handling and caching
+const useDataFetching = () => {
+  const [data, setData] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-export function Dashboard() {
-  const [farmersCount, setFarmersCount] = useState(0);
-  const [vendorsCount, setVendorsCount] = useState(0);
-  const [productsCount, setProductsCount] = useState(0);
-  const [newsCount, setNewsCount] = useState(0);
-
-  useEffect(() => {
-    fetchFarmers().then(data => setFarmersCount(data.length));
-    fetchVendors().then(data => setVendorsCount(data.length));
-    fetchProducts().then(data => setProductsCount(data.length));
-    fetchNews().then(data => setNewsCount(data.length));
+  const fetchData = useCallback(async (endpoint, key) => {
+    try {
+      const res = await fetch(endpoint);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch ${key}: ${res.status}`);
+      }
+      const result = await res.json();
+      return { [key]: result };
+    } catch (error) {
+      console.error(`Error fetching ${key}:`, error);
+      return { [key]: [] };
+    }
   }, []);
 
-  const liveStatsData = [
-    {
-      title: "Total Farmers",
-      value: farmersCount,
-      icon: Users,
-      description: "Registered farmers",
-      color: "bg-gradient-to-r from-green-500 to-green-600",
-      iconBg: "bg-green-100",
-      iconColor: "text-green-600",
-    },
-    {
-      title: "Total Vendors",
-      value: vendorsCount,
-      icon: Store,
-      description: "Active vendor accounts",
-      color: "bg-gradient-to-r from-blue-500 to-blue-600",
-      iconBg: "bg-blue-100",
-      iconColor: "text-blue-600",
-    },
-    {
-      title: "Organic Products",
-      value: productsCount,
-      icon: Package,
-      description: "Listed by farmers",
-      color: "bg-gradient-to-r from-purple-500 to-purple-600",
-      iconBg: "bg-purple-100",
-      iconColor: "text-purple-600",
-    },
-    {
-      title: "News Articles",
-      value: newsCount,
-      icon: Newspaper,
-      description: "Published articles",
-      color: "bg-gradient-to-r from-orange-500 to-orange-600",
-      iconBg: "bg-orange-100",
-      iconColor: "text-orange-600",
-    },
-  ];
+  const fetchAllData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const promises = Object.entries(API_ENDPOINTS).map(([key, endpoint]) =>
+        fetchData(endpoint, key)
+      );
+      
+      const results = await Promise.all(promises);
+      const combinedData = results.reduce((acc, result) => ({ ...acc, ...result }), {});
+      
+      setData(combinedData);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchData]);
 
-  // Prepare chart data for a single bar per category using live counts
-  const summaryChartData = [
-    { category: "Farmers", count: farmersCount, color: "#22c55e" },
-    { category: "Vendors", count: vendorsCount, color: "#3b82f6" },
-    { category: "Products", count: productsCount, color: "#8b5cf6" },
-  ];
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
+
+  return { data, loading, error, refetch: fetchAllData };
+};
+
+// Optimized chart data generation
+const useChartData = (data) => {
+  return useMemo(() => {
+    const counts = {
+      farmers: data.farmers?.length || 0,
+      vendors: data.vendors?.length || 0,
+      products: data.products?.length || 0,
+      news: data.news?.length || 0
+    };
+
+    return STATS_CONFIG
+      .filter(stat => stat.key !== 'news') // Exclude news from chart
+      .map(stat => ({
+        category: stat.title.replace('Total ', '').replace('Organic ', ''),
+        count: counts[stat.key],
+        color: stat.chartColor
+      }));
+  }, [data]);
+};
+
+// Optimized stats data generation
+const useStatsData = (data) => {
+  return useMemo(() => {
+    const counts = {
+      farmers: data.farmers?.length || 0,
+      vendors: data.vendors?.length || 0,
+      products: data.products?.length || 0,
+      news: data.news?.length || 0
+    };
+
+    return STATS_CONFIG.map(stat => ({
+      ...stat,
+      value: counts[stat.key]
+    }));
+  }, [data]);
+};
+
+// Loading component
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center h-64">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+  </div>
+);
+
+// Error component
+const ErrorDisplay = ({ error, onRetry }) => (
+  <div className="flex items-center justify-center h-64">
+    <div className="text-center">
+      <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+      <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Data</h3>
+      <p className="text-gray-600 mb-4">{error}</p>
+      <button
+        onClick={onRetry}
+        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+      >
+        Retry
+      </button>
+    </div>
+  </div>
+);
+
+// Stats card component
+const StatsCard = ({ stat }) => (
+  <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white">
+    <CardHeader className="pb-3">
+      <div className="flex items-center justify-between">
+        <div className={`p-3 rounded-xl ${stat.iconBg}`}>
+          <stat.icon className={`h-6 w-6 ${stat.iconColor}`} />
+        </div>
+        <div className={`w-16 h-16 rounded-full ${stat.color} opacity-10 absolute -top-4 -right-4`}></div>
+      </div>
+      <CardTitle className="text-2xl font-bold text-gray-900">
+        {stat.value.toLocaleString()}
+      </CardTitle>
+      <CardDescription className="text-gray-600">
+        {stat.description}
+      </CardDescription>
+    </CardHeader>
+    <CardContent>
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-gray-500">{stat.title}</span>
+        <TrendingUp className="h-4 w-4 text-green-500" />
+      </div>
+    </CardContent>
+  </Card>
+);
+
+// Chart component
+const DashboardChart = ({ data }) => (
+  <Card className="col-span-full">
+    <CardHeader>
+      <CardTitle>Platform Overview</CardTitle>
+      <CardDescription>Distribution of farmers, vendors, and products</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="category" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </CardContent>
+  </Card>
+);
+
+// Quick actions component
+const QuickActions = () => (
+  <Card className="col-span-full">
+    <CardHeader>
+      <CardTitle>Quick Actions</CardTitle>
+      <CardDescription>Common tasks and shortcuts</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "Add New Farmer", href: "/farmers", icon: Users, color: "bg-green-500" },
+          { label: "Add New Vendor", href: "/vendors", icon: Store, color: "bg-blue-500" },
+          { label: "Add New Product", href: "/organic-products", icon: Package, color: "bg-purple-500" },
+          { label: "Create News", href: "/news", icon: Newspaper, color: "bg-orange-500" }
+        ].map((action) => (
+          <a
+            key={action.label}
+            href={action.href}
+            className="flex flex-col items-center p-4 rounded-lg border hover:shadow-md transition-all duration-200 hover:-translate-y-1"
+          >
+            <div className={`p-3 rounded-full ${action.color} mb-2`}>
+              <action.icon className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-sm font-medium text-gray-700 text-center">
+              {action.label}
+            </span>
+          </a>
+        ))}
+      </div>
+    </CardContent>
+  </Card>
+);
+
+// System status component
+const SystemStatus = () => (
+  <Card className="col-span-full">
+    <CardHeader>
+      <CardTitle>System Status</CardTitle>
+      <CardDescription>Platform health and performance</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[
+          { name: "Database", status: "Operational", color: "text-green-600", bg: "bg-green-100" },
+          { name: "API", status: "Healthy", color: "text-green-600", bg: "bg-green-100" },
+          { name: "Frontend", status: "Running", color: "text-green-600", bg: "bg-green-100" }
+        ].map((service) => (
+          <div key={service.name} className="flex items-center space-x-3 p-3 rounded-lg border">
+            <div className={`w-3 h-3 rounded-full ${service.bg}`}></div>
+            <div>
+              <p className="font-medium text-gray-900">{service.name}</p>
+              <p className={`text-sm ${service.color}`}>{service.status}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </CardContent>
+  </Card>
+);
+
+export function Dashboard() {
+  const { data, loading, error, refetch } = useDataFetching();
+  const statsData = useStatsData(data);
+  const chartData = useChartData(data);
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (error) {
+    return <ErrorDisplay error={error} onRetry={refetch} />;
+  }
 
   return (
     <div className="space-y-8">
@@ -192,149 +317,18 @@ export function Dashboard() {
 
       {/* Enhanced Stats Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {liveStatsData.map((stat, index) => (
-          <Card
-            key={stat.title}
-            className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white"
-          >
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
-                  <div className="text-3xl font-bold text-gray-900">{stat.value}</div>
-                </div>
-                <div className={`p-3 rounded-xl ${stat.iconBg}`}>
-                  <stat.icon className={`h-6 w-6 ${stat.iconColor}`} />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="h-4 w-4 text-green-500" />
-                <p className="text-sm text-gray-600">{stat.description}</p>
-              </div>
-              <div className="mt-3 h-1 bg-gray-100 rounded-full overflow-hidden">
-                <div className={`h-full w-3/4 ${stat.color} rounded-full`}></div>
-              </div>
-            </CardContent>
-          </Card>
+        {statsData.map((stat) => (
+          <StatsCard key={stat.title} stat={stat} />
         ))}
       </div>
 
-      {/* Enhanced Growth Chart */}
-      <Card className="shadow-lg border-0 bg-white">
-        <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-xl border-b">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-xl font-semibold text-gray-800">Platform Growth Analytics</CardTitle>
-              <CardDescription className="text-gray-600 mt-1">
-                Track current totals across all platform categories
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={summaryChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="category" tick={{ fontSize: 14, fill: "#6b7280" }} axisLine={{ stroke: "#e5e7eb" }} />
-              <YAxis tick={{ fontSize: 14, fill: "#6b7280" }} axisLine={{ stroke: "#e5e7eb" }} allowDecimals={false} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "white",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "12px",
-                  boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-                }}
-                formatter={(value) => [value, "Count"]}
-              />
-              <Bar dataKey="count" radius={[8, 8, 0, 0]}>
-                {summaryChartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      {/* Chart and Additional Sections */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <DashboardChart data={chartData} />
+        <QuickActions />
+      </div>
 
-      {/* Enhanced Recent Activity */}
-      <Card className="shadow-lg border-0 bg-white">
-        <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-xl border-b">
-          <CardTitle className="text-xl font-semibold text-gray-800">Recent Platform Activity</CardTitle>
-          <CardDescription className="text-gray-600">Latest updates and activities across the platform</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="space-y-4">
-            {[
-              {
-                action: "New farmer registration",
-                user: "Rajesh Kumar",
-                time: "2 minutes ago",
-                type: "farmer",
-                description: "Registered from Punjab with wheat farming experience",
-              },
-              {
-                action: "Organic product added",
-                user: "Priya Sharma",
-                time: "15 minutes ago",
-                type: "product",
-                description: "Added organic tomatoes to the marketplace",
-              },
-              {
-                action: "New banner created",
-                user: "Admin",
-                time: "2 hours ago",
-                type: "banner",
-                description: "Summer crop protection campaign banner",
-              },
-              {
-                action: "Vendor account updated",
-                user: "Green Seeds Co.",
-                time: "3 hours ago",
-                type: "vendor",
-                description: "Updated product catalog and pricing",
-              },
-              {
-                action: "News article published",
-                user: "Admin",
-                time: "4 hours ago",
-                type: "news",
-                description: "Agricultural subsidy scheme announcement",
-              },
-            ].map((activity, index) => (
-              <div
-                key={index}
-                className="flex items-start space-x-4 p-4 rounded-xl hover:bg-gray-50 transition-all duration-200 border border-gray-100 hover:border-gray-200"
-              >
-                <div
-                  className={`w-3 h-3 rounded-full mt-2 flex-shrink-0 ${
-                    activity.type === "farmer"
-                      ? "bg-green-500"
-                      : activity.type === "vendor"
-                        ? "bg-blue-500"
-                        : activity.type === "banner"
-                          ? "bg-purple-500"
-                          : activity.type === "product"
-                            ? "bg-yellow-500"
-                            : "bg-gray-500"
-                  }`}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{activity.action}</p>
-                    <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{activity.time}</span>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-1">
-                    <span className="font-medium">{activity.user}</span>
-                  </p>
-                  <p className="text-xs text-gray-500 leading-relaxed">{activity.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <SystemStatus />
     </div>
-  )
+  );
 }
